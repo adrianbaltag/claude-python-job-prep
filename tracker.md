@@ -35,6 +35,6 @@ _(none yet)_
 _(none yet)_
 
 ## Portfolio Status
-- Repos: none yet
-- READMEs: none yet
-- Commits: none yet
+- Repos: [claude-python-job-prep](https://github.com/adrianbaltag/claude-python-job-prep) (public)
+- READMEs: root README.md done (2026-07-24)
+- Commits: 1 — "Initial course setup: roadmap, cheatsheet, README"
