@@ -13,7 +13,7 @@ Last updated: 2026-07-24
 | # | Lesson | Python/OOP focus | Claude/API focus | Status |
 |---|--------|-------------------|-------------------|--------|
 | 1 | First API Call | variables, strings, running a `.py` script | `anthropic` SDK setup, `messages.create`, system prompt | ✅ done |
-| 2 | Loops & Conversations | `if`/`else`, `while` loops | multi-turn conversation loop, temperature | ☐ |
+| 2 | Loops & Conversations | `if`/`else`, `while` loops | multi-turn conversation loop, temperature | ✅ done |
 | 3 | Functions & Prompt Templates | functions, params, f-strings | reusable prompt-building functions | ☐ |
 | 4 | Data & Structured Output | lists, dicts | getting/parsing structured (JSON) responses | ☐ |
 | 5 | OOP I — Classes | classes, `__init__`, methods | wrap the API in a `ChatBot` class | ☐ |
@@ -26,7 +26,7 @@ Last updated: 2026-07-24
 | 12 | Evaluation | writing a small test script | eval script vs. hand-labeled examples | ☐ |
 | 13 | Capstone | everything above | full automation, published to GitHub | ☐ |
 
-**Current position:** Lesson 1 done (2026-07-24). Next up: Lesson 2.
+**Current position:** Lesson 2 done (2026-07-24). Next up: Lesson 3.
 
 ## Capstone Theme (LOCKED — approved 2026-07-24)
 
@@ -63,6 +63,20 @@ Exact spread data, diagram format, and tool design will be nailed down with a
   than shortening cleanly. Demonstrated live: `max_tokens=5` produced `'*squints at ye'` — 14
   characters, cut off mid-word. Re-quizzed on whether reply length would vary by question — passed.
 
+**Lesson 2 (2026-07-24):**
+- Q1 (delete the assistant `.append()` line — what breaks?): correct first try — Claude stops
+  seeing its own past replies, so it forgets what it just said and can contradict itself.
+- Q2 (`while keep_chatting:` → `while True:`, does typing "quit" still stop the program?): first
+  answer wrong — said "nothing, still works, since keep_chatting is already true." Corrected with
+  a bolted-sign-vs-walkie-talkie metaphor: `while True:` checks the literal word `True`, not the
+  variable at all, so setting `keep_chatting = False` has no effect on the loop condition anymore.
+  Re-quizzed — passed: correctly said `while True:` never stops via `quit`, and that reverting to
+  checking `keep_chatting` (or adding a `break` statement) would fix it.
+- Q3 (user types "Quit" with capital Q — what happens?): reasoning correct (case-sensitive string
+  comparison misses the exact match, `.lower()` would fix it) but used the word "break" to describe
+  the consequence. Corrected: nothing crashes — the `else` branch just runs instead, sending "Quit"
+  to Claude as a normal chat message, and the loop keeps going without exiting.
+
 ## Exercise Log
 
 **Lesson 1 — `src/lesson01/first_call.py` (2026-07-24):**
@@ -82,6 +96,22 @@ before fix, no guessing):
 4. Editor autocomplete added unimported type hints (`response: Message`, `reply: str | Any`) —
    confirmed by direct test to raise `NameError` at runtime since Python evaluates annotation
    names eagerly. Left out of the final saved version (optional, not required for this lesson).
+
+**Lesson 2 — `src/lesson02/chat_loop.py` (2026-07-24):**
+Built a working multi-turn conversation loop: empty `conversation_history` list, `while` loop
+reading `input("You: ")`, `if`/`else` on `"quit"` to exit, both the user's message and Claude's
+reply appended to history each turn (the exact thing beginners tend to forget — both `.append()`
+calls were present). Set `temperature=1` deliberately, correctly justified as "casual chat wants
+variety; would use ~0 if it needed to return concrete/consistent data." Added a `system` persona
+(Jack Sparrow, pirate captain).
+
+Verified by tutor: ran the script feeding it "My name is Bob. Remember it." then "What is my
+name?" — Claude correctly recalled "Bob" on the second turn, confirming the history-resending
+mechanism actually works, not just that the script runs.
+
+One non-blocking note: the `system` string had two typos ("Your Jack Sparrow" / "Caraibe") — did
+not affect functionality since Claude reads it as plain text regardless, but flagged as a real-world
+lesson that typos in a `system` prompt silently degrade a persona rather than erroring.
 
 ## Portfolio Status
 - Repos: [claude-python-job-prep](https://github.com/adrianbaltag/claude-python-job-prep) (public)

@@ -141,3 +141,51 @@ print(reply)
   (`uv run --env-file .env --`), not through Python.
 - `system` = personality/behavior for the whole reply; `messages` = what's actually being asked.
 - `max_tokens` counts word-chunks, not characters — a low value truncates mid-sentence.
+
+## Hands-on Lesson 02 — Loops & Conversations
+
+**What this lesson is about:** Making Python repeat and decide (`while`, `if`/`else`), and using
+those to build a real back-and-forth conversation with Claude — since Claude itself remembers
+nothing between calls.
+
+**The idea in plain words:** `if`/`else` is a vending machine checking "enough coins? → snack,
+else → ask for more." `while` is a kid repeating "are we there yet?" until the one condition
+(arrived) flips — stop changing the condition inside the loop and you get an endless loop. Claude
+has no memory of past messages by itself — it's like talking to someone with amnesia — so a
+"conversation" is really just YOU resending the entire growing transcript (`conversation_history`)
+on every single turn, not one long-remembered chat on Claude's end.
+
+**Example:**
+
+```python
+conversation_history = []          # the transcript, empty at the start
+keep_chatting = True
+while keep_chatting:               # repeat until the condition flips false
+    user_message = input("You: ")
+    if user_message == "quit":     # decision: stop, or keep going
+        keep_chatting = False
+    else:
+        conversation_history.append({"role": "user", "content": user_message})
+        response = client.messages.create(
+            model="claude-haiku-4-5", max_tokens=500,
+            messages=conversation_history,   # whole transcript, every time
+        )
+        reply_text = response.content[0].text
+        conversation_history.append({"role": "assistant", "content": reply_text})
+```
+
+**Remember:**
+
+- Forget to append Claude's own reply to the history → Claude forgets what it just said and
+  contradicts itself, since it never actually "saw" its past answer.
+- `while True:` checks the literal word `True`, not a variable — changing a variable inside does
+  nothing to stop it; you'd need `break` or to go back to checking the real variable.
+- String comparisons are case-sensitive (`"quit" != "Quit"`) — mismatches silently fall into
+  `else` rather than crashing.
+
+**Mistakes I made:**
+
+- Said `while True:` would still stop on `"quit"` since the variable gets set to `False` — wrong;
+  `while True:` never even looks at that variable, so nothing about the loop's condition changes.
+- Called a case-mismatch ("Quit" vs "quit") a "break" — nothing crashes, it just silently takes
+  the `else` branch and keeps looping instead of exiting.
