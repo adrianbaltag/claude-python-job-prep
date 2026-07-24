@@ -12,3 +12,6 @@ venv/
 
 # Secrets — never commit API keys
 .env
+
+# Session handoff docs (local resume notes, not course content)
+handoffs/
