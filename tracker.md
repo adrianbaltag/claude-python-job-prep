@@ -12,7 +12,7 @@ Last updated: 2026-07-24
 
 | # | Lesson | Python/OOP focus | Claude/API focus | Status |
 |---|--------|-------------------|-------------------|--------|
-| 1 | First API Call | variables, strings, running a `.py` script | `anthropic` SDK setup, `messages.create`, system prompt | ☐ not started |
+| 1 | First API Call | variables, strings, running a `.py` script | `anthropic` SDK setup, `messages.create`, system prompt | ✅ done |
 | 2 | Loops & Conversations | `if`/`else`, `while` loops | multi-turn conversation loop, temperature | ☐ |
 | 3 | Functions & Prompt Templates | functions, params, f-strings | reusable prompt-building functions | ☐ |
 | 4 | Data & Structured Output | lists, dicts | getting/parsing structured (JSON) responses | ☐ |
@@ -26,7 +26,7 @@ Last updated: 2026-07-24
 | 12 | Evaluation | writing a small test script | eval script vs. hand-labeled examples | ☐ |
 | 13 | Capstone | everything above | full automation, published to GitHub | ☐ |
 
-**Current position:** Not yet started. Next up: Lesson 1.
+**Current position:** Lesson 1 done (2026-07-24). Next up: Lesson 2.
 
 ## Capstone Theme (LOCKED — approved 2026-07-24)
 
@@ -54,10 +54,34 @@ Exact spread data, diagram format, and tool design will be nailed down with a
 `/grill-me` planning pass when Lesson 13 is actually reached.
 
 ## Quiz Log
-_(none yet)_
+
+**Lesson 1 (2026-07-24):**
+- Q1 (remove `system=` entirely — crash or run?): correct — runs fine, just loses the persona,
+  `system` is optional.
+- Q2 (`max_tokens=5` effect): first answer wrong — said reply would be "5 characters." Corrected:
+  `max_tokens` counts tokens (word-chunks), not letters; a low limit truncates mid-sentence rather
+  than shortening cleanly. Demonstrated live: `max_tokens=5` produced `'*squints at ye'` — 14
+  characters, cut off mid-word. Re-quizzed on whether reply length would vary by question — passed.
 
 ## Exercise Log
-_(none yet)_
+
+**Lesson 1 — `src/lesson01/first_call.py` (2026-07-24):**
+Built a working `client.messages.create()` call with a real system prompt (grumpy sea captain
+persona), a real user question, and printed the reply text. Verified working end-to-end (ran
+independently by tutor, real API response returned).
+
+Bugs hit and fixed during review, each debugged via the systematic-debugging skill (root cause
+before fix, no guessing):
+1. Ran script without the `uv run --env-file .env --` prefix → `TypeError` (no API key resolved).
+   Root cause confirmed by reproducing with the correct command — auth error disappeared.
+2. `client.messages.create(...)`'s result was never assigned to a variable → later line referencing
+   `response` raised `NameError`.
+3. Editor autocomplete silently inserted `from urllib import response` (an unrelated real Python
+   module) while typing — it shadowed the intended variable name, turning the `NameError` into a
+   confusing `AttributeError: module 'urllib.response' has no attribute 'content'`.
+4. Editor autocomplete added unimported type hints (`response: Message`, `reply: str | Any`) —
+   confirmed by direct test to raise `NameError` at runtime since Python evaluates annotation
+   names eagerly. Left out of the final saved version (optional, not required for this lesson).
 
 ## Portfolio Status
 - Repos: [claude-python-job-prep](https://github.com/adrianbaltag/claude-python-job-prep) (public)

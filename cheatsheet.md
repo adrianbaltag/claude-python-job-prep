@@ -100,3 +100,44 @@ Three ingredients, every time:
 - **Needs letter-perfect counting/parsing?** → Don't trust Claude directly — use a real tool.
 - **Not sure if the output is actually correct?** → Don't ask Claude to self-check in the same chat — verify independently (fresh context, real tool, or a human), and scale the effort to how high-stakes the task is.
   _(Lessons 06+ will be appended below this line as they're completed.)_
+
+---
+
+## Hands-on Lessons
+
+## Hands-on Lesson 01 — First API Call
+
+**What this lesson is about:** Sending a real message to Claude from Python and getting a real
+answer back — your first working API call — plus what `system` and `max_tokens` actually do.
+
+**The idea in plain words:** Calling the API is like ordering at a counter where you can't see
+the cook: you fill in a form (`model`, `max_tokens`, `system`, `messages`) and hand it over, and
+a receipt comes back with the answer buried inside it (`response.content[0].text`). `system` is
+an instruction sheet taped above the cook's station — it shapes every answer, no matter what's
+asked. `max_tokens` isn't a letter limit, it's a limit on word-chunks ("tokens") — hit the limit
+and the reply just stops mid-thought, it doesn't shrink neatly.
+
+**Example:**
+
+```python
+import anthropic
+
+client = anthropic.Anthropic()  # picks up the API key from the environment, not from code
+
+response = client.messages.create(
+    model="claude-haiku-4-5",
+    max_tokens=500,
+    messages=[{"role": "user", "content": "who am I?"}],
+    system="You are a grumpy old sea captain. Answer in character, complain about the weather.",
+)
+
+reply = response.content[0].text
+print(reply)
+```
+
+**Remember:**
+
+- The API key never appears in your code — it flows in through the terminal command
+  (`uv run --env-file .env --`), not through Python.
+- `system` = personality/behavior for the whole reply; `messages` = what's actually being asked.
+- `max_tokens` counts word-chunks, not characters — a low value truncates mid-sentence.
