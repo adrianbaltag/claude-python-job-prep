@@ -14,7 +14,7 @@ Last updated: 2026-07-24
 |---|--------|-------------------|-------------------|--------|
 | 1 | First API Call | variables, strings, running a `.py` script | `anthropic` SDK setup, `messages.create`, system prompt | ✅ done |
 | 2 | Loops & Conversations | `if`/`else`, `while` loops | multi-turn conversation loop, temperature | ✅ done |
-| 3 | Functions & Prompt Templates | functions, params, f-strings | reusable prompt-building functions | ☐ |
+| 3 | Functions & Prompt Templates | functions, params, f-strings | reusable prompt-building functions | ✅ done |
 | 4 | Data & Structured Output | lists, dicts | getting/parsing structured (JSON) responses | ☐ |
 | 5 | OOP I — Classes | classes, `__init__`, methods | wrap the API in a `ChatBot` class | ☐ |
 | 6 | Errors & Resilience | `try`/`except`, custom exceptions | handling API errors/rate limits robustly | ☐ |
@@ -26,7 +26,7 @@ Last updated: 2026-07-24
 | 12 | Evaluation | writing a small test script | eval script vs. hand-labeled examples | ☐ |
 | 13 | Capstone | everything above | full automation, published to GitHub | ☐ |
 
-**Current position:** Lesson 2 done (2026-07-24). Next up: Lesson 3.
+**Current position:** Lesson 3 done (2026-07-25). Next up: Lesson 4.
 
 ## Capstone Theme (LOCKED — approved 2026-07-24)
 
@@ -77,6 +77,22 @@ Exact spread data, diagram format, and tool design will be nailed down with a
   the consequence. Corrected: nothing crashes — the `else` branch just runs instead, sending "Quit"
   to Claude as a normal chat message, and the loop keeps going without exiting.
 
+**Lesson 3 (2026-07-25):**
+- Q1 (does `x = build_prompt` with no parentheses error immediately, and if not, when?): first answer wrong —
+  said it would error right away. Corrected using a "sticky note with a name on it" metaphor and the actual
+  traceback from the exercise itself: assigning without calling never errors on its own — Python happily
+  holds a reference to anything. The error only appears later, at the point something tries to *use* that
+  reference as if it were real data (e.g. mailing it to the API as `content`, which requires text).
+  Re-quizzed — passed: correctly explained no error on assignment, error only on later use, root cause being
+  the missing `()`.
+- Q2 (what would a list need to hold to send two different prompts to Claude?): first answer imprecise —
+  described the list as holding "the build_prompt func... with diff args," which reads as storing the
+  machine itself rather than its output. Clarified: because each entry is a full call with parentheses and
+  arguments (e.g. `build_prompt("python", "friendly")`), Python evaluates it immediately, so the list ends
+  up holding the *returned strings*, not the function. Re-quizzed — passed with precise wording.
+- Q3 (why didn't the Lesson 2 `while` loop belong in this exercise?): correct first try — loops are for
+  ongoing/dynamic multi-turn conversations; a single one-shot prompt-and-reply doesn't need one.
+
 ## Exercise Log
 
 **Lesson 1 — `src/lesson01/first_call.py` (2026-07-24):**
@@ -112,6 +128,36 @@ mechanism actually works, not just that the script runs.
 One non-blocking note: the `system` string had two typos ("Your Jack Sparrow" / "Caraibe") — did
 not affect functionality since Claude reads it as plain text regardless, but flagged as a real-world
 lesson that typos in a `system` prompt silently degrade a persona rather than erroring.
+
+**Lesson 3 — `src/lesson03/prompt_templates.py` (2026-07-25):**
+Built `build_prompt(topic, tone)`, a two-parameter function returning an f-string prompt. Called it twice
+with different arguments (once at module level, once inside `first_call()`), then fed one built prompt into
+a real `client.messages.create()` call (grumpy sea captain persona reused from Lesson 1) and printed the
+reply. Verified working end-to-end by tutor: real API call returned an in-character reply.
+
+This exercise took significantly longer than Lessons 1–2 and needed heavy scaffolding — the recurring root
+cause across nearly every bug was the same concept not yet clicking: **referencing a function vs. calling
+it**. Each bug was debugged from real error output (systematic-debugging: reproduce → root cause → fix),
+never guessed:
+1. `first_call()` was defined but never invoked anywhere (`print(first_call)` prints the function object,
+   not its result) — confirmed by running the script and seeing no API activity at all.
+2. A leftover `task=build_prompt` argument was passed into `messages.create()` — not a real parameter;
+   confirmed via `TypeError: Messages.create() got an unexpected keyword argument 'task'` once bug 1 was fixed.
+3. `user_message = build_prompt` (no parentheses/args) assigned the function object itself instead of a
+   built string — confirmed via `TypeError: Object of type function is not JSON serializable` once bugs 1–2
+   were fixed. This exact bug recurred twice more in slightly different spots before the underlying concept
+   (calling vs. referencing) actually landed — resolved with a "vending machine button" metaphor and a
+   from-scratch re-teach of the whole request/response flow using a single unifying "chef taking a phone
+   order" story.
+4. Leftover Lesson 2 `while`/`input()` loop logic was carried over unnecessarily, including an exit
+   condition (`if user_message == "quit"`) that could never be true once `user_message` came from
+   `build_prompt(...)` instead of keyboard input — this would have produced a silent infinite loop of real
+   API calls if run. Caught by static reasoning before running it (deliberately not executed, to avoid
+   burning real API calls in a runaway loop). Resolved by removing the loop entirely, since this exercise
+   only needed one request/response, not an ongoing conversation.
+5. Running the file via the editor's Run button (rather than `uv run --env-file .env --`) produced
+   `TypeError: Could not resolve authentication method` — same root cause as Lesson 1 bug #1, just
+   resurfacing in a new context (VS Code's run button doesn't load `.env`).
 
 ## Portfolio Status
 - Repos: [claude-python-job-prep](https://github.com/adrianbaltag/claude-python-job-prep) (public)

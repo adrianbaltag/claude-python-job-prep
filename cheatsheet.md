@@ -189,3 +189,51 @@ while keep_chatting:               # repeat until the condition flips false
   `while True:` never even looks at that variable, so nothing about the loop's condition changes.
 - Called a case-mismatch ("Quit" vs "quit") a "break" — nothing crashes, it just silently takes
   the `else` branch and keeps looping instead of exiting.
+
+## Lesson 03 — Functions & Prompt Templates
+
+**What this lesson is about:** Writing a reusable function that builds a text prompt, then
+actually sending that prompt to Claude and printing the real reply.
+
+**The idea in plain words:** A function is a machine with buttons — just saying its name
+(`build_prompt`) points at the machine but does nothing; you have to press its buttons with real
+values (`build_prompt("python", "friendly")`) to get anything out. What you get back is the actual
+usable thing (a string) — that's what goes into the API call's `content`, not the machine itself.
+No parentheses = you're holding a reference to the machine, not its output, and Python won't
+complain until later, when something tries to actually use what you're holding as if it were text.
+
+**Example:**
+
+```python
+def build_prompt(topic, tone):              # the machine, with two buttons
+    return f"Explain {topic} in a {tone} tone"
+
+my_prompt = build_prompt("python", "friendly")   # press it → get the real string back
+
+response = client.messages.create(
+    model="claude-haiku-4-5", max_tokens=500,
+    messages=[{"role": "user", "content": my_prompt}],   # the string goes in the envelope
+)
+print(response.content[0].text)
+```
+
+**Remember:**
+
+- `name` (no parentheses) = a reference to the function. `name(args)` = actually running it and
+  getting its result back — these are very different things.
+- A function only needs to run once per prompt; it doesn't need a `while` loop unless you're
+  building an ongoing back-and-forth conversation, not a single question-and-answer.
+- Reading the real error message (not guessing) tells you exactly which of these two things you
+  actually did.
+
+**Mistakes I made:**
+
+- Assigned a function without calling it (`my_prompt = build_prompt`, missing `()` and arguments)
+  three separate times before it stuck — each time it silently held the function object, not a
+  string, and only errored later when the API call tried to send it (`TypeError: Object of type
+  function is not JSON serializable`).
+- Thought `x = build_prompt` (no call) would error immediately — wrong; assigning a bare function
+  reference never errors by itself, only using it later as if it were real data does.
+- Carried over the Lesson 2 `while` loop unnecessarily, including a `"quit"` check that could never
+  trigger once the message source changed from keyboard input to a function's fixed output — would
+  have caused a silent infinite loop of real API calls if run.
