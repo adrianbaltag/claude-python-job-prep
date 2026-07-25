@@ -237,3 +237,306 @@ print(response.content[0].text)
 - Carried over the Lesson 2 `while` loop unnecessarily, including a `"quit"` check that could never
   trigger once the message source changed from keyboard input to a function's fixed output — would
   have caused a silent infinite loop of real API calls if run.
+
+## Lesson 04 — Data & Structured Output
+
+**What this lesson is about:** Asking Claude to reply in JSON instead of a paragraph, then turning
+that JSON *text* into real Python data (a list of dicts) you can actually use.
+
+**The idea in plain words:** JSON is just a dictionary/list, written out as plain text, so it can
+travel between programs that don't speak Python. `raw_text` from Claude is only ever a **letter
+describing** a dict — you can't do `raw_text["topic"]`, because it's just characters, not a real
+dict yet. `json.loads(raw_text)` is the person who **reads the letter and builds the actual dict**
+— only after that line runs do you have something you can index with `["topic"]`.
+
+**Example:**
+
+```python
+raw_text = '{"topic": "loops", "difficulty": "beginner"}'  # a STRING — just text
+data = json.loads(raw_text)          # NOW it's a real dict
+print(data["topic"])                 # "loops" — works only after loads()
+
+clean_data = []                      # empty bag BEFORE the loop
+for i in data_list:                  # data_list = a list of dicts, one per item
+    clean_data.append((i["topic"], i["difficulty"]))   # ADD, don't replace
+return clean_data                    # hand back ALL of them, after the loop
+```
+
+**Remember:**
+
+- `json.loads` always takes a string in (normal) — it fails when the string's *content* doesn't
+  start with `{` or `[`. A Claude reply wrapped in \`\`\`json fences crashes here:
+  `JSONDecodeError: Expecting value: line 1 column 1 (char 0)` — literally the first character.
+- Reaching for a dict key that isn't there → `KeyError: 'keyname'`. Same family as `IndexError`
+  (missing list position) — `KeyError` is the "missing **name**" version, `IndexError` is the
+  "missing **position**" version.
+- `clean_data = [...]` inside a loop **replaces** the whole list every pass — only the **last**
+  item survives. `clean_data.append(...)` **adds** to it — all items survive. Same-looking line,
+  opposite result; check for `.append(` specifically.
+
+**Mistakes I made:**
+
+- Original exercise bug: `return (...)` sat *inside* the loop, so the function exited on the very
+  first item — silently dropped items 2 and 3, no error at all. Fixed with the "second bag"
+  pattern (empty list before, `.append()` inside, `return` after).
+- Said a fenced (\`\`\`json) reply "won't error, Claude just ignored instructions" — wrong, it
+  crashes immediately on the first character being a backtick instead of `{`.
+- Guessed the crash was about "expecting a dict, not a string" — wrong; `json.loads` always
+  expects a string. The real issue is *what's written inside* that string.
+- Guessed a missing dict key raises `ValueError` — wrong, it's `KeyError`.
+- Traced a `clean_data = [(...)]`-inside-the-loop variant and guessed the *first* item would
+  survive (same shape as the original bug) — wrong; `=` overwrites each pass, so the **last**
+  item is the one left standing. Opposite failure mode from the `return`-in-a-loop bug, despite
+  looking similar.
+- Had never used JSON before this lesson at all — needed it taught from scratch mid-quiz (the
+  "letter vs. the person who builds the dict from it" metaphor above is what landed it).
+
+---
+
+# 🧭 REFERENCE CARD — The Method (use this on every build task)
+
+*Added 2026-07-25. Not a lesson entry — a permanent card to reuse forever.*
+
+**Never start with code. Start with the finished result and work backwards.**
+
+Four questions. Each one is a different place in the code:
+
+```python
+def my_function(IN, IN):
+    STEPS
+    return OUT
+```
+
+| Question | Where it lands in the code |
+|---|---|
+| 1. **OUT** — what do I get back at the end, and what kind of thing is it? | after `return` |
+| 2. **IN** — what must I be given before I can start? | inside the brackets (the parameters) |
+| 3. **STEPS** — what has to happen to turn the INs into the OUT? | the lines in the middle |
+| 4. **CODE** — write it | — |
+
+**Short version:** what do I get back? → what must I be given? → what happens in
+between? → write it.
+
+## Paste this above any function you're about to write
+
+```python
+# OUT:   what comes back + what kind of thing (string / number / list / dict)
+# IN:    what I must be given
+# STEPS: 1.
+#        2.
+#        3.
+```
+
+Fill in the comments FIRST, in plain English. Only then write one line of Python
+under each step. If the comments make no sense, the code never will.
+
+## Rules that catch the usual mistakes
+
+- **OUT is an end state, not your effort.** "A written birthday card" is not done —
+  "my sister has the card" is done. Getting OUT wrong means building the wrong
+  thing perfectly.
+- **IN is real things, named plainly** — "a name, a city", not "params" or
+  "f-string". Those answer *how*, and *how* comes last.
+- **The result is not a step.** Steps stop when the work is handed over.
+- **Anything you don't do yourself is not a step** (the post office delivering it).
+- **Returning the INs is not the same as returning the OUT.** Handing back a mug of
+  hot water and a teabag is not handing back tea.
+
+## Worked example
+
+Task: *"a function that takes a name and a city and returns a greeting"*
+
+| Stage | Answer |
+|---|---|
+| OUT | one string, e.g. `"Hello Adrian from New Jersey"` |
+| IN | a name, a city |
+| STEPS | build the sentence from both → hand it back |
+| CODE | `def`, an f-string, a `return` |
+
+---
+
+# 🔧 REFERENCE CARD — Turning the route into working code
+
+*Added 2026-07-25. Companion to the Method card above. Every rule here came from
+a real bug in my own file, discovered by running it — not from being told.*
+
+## The shape every function should have
+
+```python
+def do_something(thing_it_needs):     # IN  — given to it, never invented inside
+    result = ...                      # STEPS
+    return result                     # OUT — handed back, not shouted
+
+answer = do_something(my_data)        # the caller CATCHES it
+print(answer)                         # the caller SHOWS it
+```
+
+**The function's job is to give back. Showing it on screen is the caller's job.**
+
+## 1. `print` is not `return`
+
+- `print` = shouting the answer across the room. Everyone hears it; nobody holds it.
+- `return` = handing the answer over. Now it can be used for something else.
+
+A function with no `return` gives back `None` — Python's word for "nothing".
+
+```python
+names = people_names()   # function only printed → names is None
+print(names[0])          # TypeError: 'NoneType' object is not subscriptable
+```
+
+Plain English: *you asked nothing for item 0, and nothing has no items.*
+
+**Why it matters:** printing is a dead end — the answer appears and vanishes.
+Returning means the answer can be fed into the next step. Anything that has to
+be used later (like Claude's reply) MUST be returned.
+
+## 2. Catch what comes back, or it's thrown away
+
+```python
+count_names(names)          # ✗ returns 10 → nobody catches it → gone
+total = count_names(names)  # ✓ caught
+```
+
+## 3. `return` inside a loop stops the whole function
+
+`return` doesn't just hand something over — it walks out the door. The loop
+never finishes.
+
+```python
+for w in words:
+    if len(w) > 4:
+        return w        # ✗ hands back the FIRST match only, then stops
+```
+
+To give back **all** the matches, use the "second bag":
+
+```python
+long_words = []             # empty bag BEFORE the loop
+for w in words:
+    if len(w) > 4:
+        long_words.append(w)   # fill it INSIDE the loop
+return long_words           # hand the bag over AFTER the loop
+```
+
+You can only return ONE thing — so many things must be collected into one list first.
+
+## 4. Loop only when there are many things
+
+- Many things (a list) → loop.
+- One thing (a single dictionary) → **no loop**. Just open it and read it.
+
+A dictionary is ONE argument, however much is inside it — a folder with several
+sheets in it is still one folder.
+
+```python
+def describe(person):              # one folder in
+    return f"{person['name']} is {person['age']}"   # open it, read two labels
+```
+
+## 5. Defaults hide mistakes
+
+```python
+def count_names(my_list=[]):   # "if nobody gives me a list, use an empty one"
+...
+count_names()                  # forgot the argument → silently returns 0
+```
+
+No error, just a wrong answer. **Without** the default it fails loudly and tells
+you exactly what you forgot:
+`TypeError: count_names() missing 1 required positional argument: 'my_list'`
+
+**A default turns a loud error into a silent wrong answer.** Only add one when
+"nothing given" is genuinely sensible.
+
+## 6. Don't reuse names Python already owns
+
+`list`, `dict`, `str`, `type`, `id`, `input`, `sum` — using these as your own
+variable names hides the real thing. Same trap as a parameter named the same as
+its own function. Name things for what they hold: `words`, `person`,
+`discount_percent`. If your editor colours a word differently, it's taken.
+
+## The four checks before saying "done"
+
+1. Does it **take** its data in the brackets, instead of inventing it inside?
+2. Does it **return** the OUT, instead of printing it?
+3. Does the caller **catch** the result in a variable?
+4. Does the returned thing match the OUT I wrote down at the start?
+
+---
+
+# 📚 REFERENCE CARD — Reading any tool's docs
+
+*Added 2026-07-25. A map to skim now; we walk the real territory (Anthropic docs)
+next session. Works for any tool — Anthropic, Postgres, Stripe, pandas, anything.*
+
+**The core idea:** docs usually "don't make sense" because the wrong room was
+entered. Ask a Quickstart a reference question and you find nothing, then blame
+the docs. Pick the room that matches your question and most of the difficulty
+disappears.
+
+## The four rooms — every docs site has them
+
+| Room | Usual names | Use it when | Do NOT use it to |
+|---|---|---|---|
+| 1. **Quickstart** | Getting Started, Installation, Introduction | I have nothing working yet — give me the smallest thing that runs | look up details; it deliberately hides most options |
+| 2. **API reference** | Reference, API docs, class/method pages | I have code, and need one specific fact: what arguments does X take? what does it give back? | learn a topic; it's a dictionary, not a lesson |
+| 3. **Guides** | How-to, Cookbook, Tutorials, Examples, Recipes | I know my goal ("stream a response", "use a tool") and want the normal way to do it | find every option; it shows one good path |
+| 4. **Changelog** | Release notes, Versions, Migration guide | code from an example doesn't work, or something online contradicts the docs | learn how anything works |
+
+## Which room? Match it to your question
+
+- *"How do I even start?"* → **Quickstart**
+- *"What does `temperature` do / what values can it take?"* → **API reference**
+- *"How do I make it do <goal>?"* → **Guides**
+- *"Why doesn't this example work for me?"* → **Changelog** (check your version first)
+
+## How to read an API reference entry
+
+They all follow the same skeleton. Read it in this order and stop when you have
+your answer:
+
+1. **Name** — what the thing is called and how it's called
+2. **Parameters** — each one: its name, what type it wants (string? number? list?),
+   whether it's **required or optional**, and its default
+3. **Returns** — what comes back, and what kind of thing it is
+4. **Example** — usually at the bottom; often the fastest thing to read
+
+Parameters and Returns map exactly onto the Method: **parameters = IN,
+returns = OUT.** A reference page is someone else's IN/OUT written down.
+
+## The fastest honest shortcut
+
+**Find the closest working example, run it unchanged, then change ONE thing at a
+time.** This is what experienced developers actually do — it isn't cheating.
+Running it unchanged first matters: if it breaks later, you know your change
+caused it.
+
+## Searching well
+
+- Search **inside** the docs site first, not the open web — the site's own search
+  knows its own words.
+- Search the **exact name** of the thing (`messages.create`, `max_tokens`), not a
+  sentence about it.
+- **A search match is not proof it's the right field.** Search finds *text that
+  contains your word*, not *the field you meant* — searching `id` can surface
+  `user_profile_id`, searching `stop_reason` can surface `stop_sequences`'
+  description. Always ask: is this the thing's own entry, or just something
+  standing near it? (Hit this live, twice, in the same session — 2026-07-25.)
+- Searching the web instead? Add the tool name and the year, and check the page's
+  date — outdated answers are the main reason copied code fails.
+- An error message pasted into search is a legitimate move; just prefer results
+  that link back to the official docs.
+
+## Two habits worth keeping
+
+1. **Check the version before believing anything.** Docs describe one version;
+   you have another. Mismatch is the usual cause of "the example doesn't work."
+2. **Doubt the tutorial, trust the reference.** Blog posts and tutorials go stale
+   quietly. The reference is generated from the real thing.
+
+## The honest bit
+
+Most docs are genuinely badly written, and nobody is ever taught how to read
+them — everyone just pretends they can. Finding them hard is normal. Having a
+routine is what separates people who cope from people who don't.
