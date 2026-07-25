@@ -540,3 +540,65 @@ caused it.
 Most docs are genuinely badly written, and nobody is ever taught how to read
 them — everyone just pretends they can. Finding them hard is normal. Having a
 routine is what separates people who cope from people who don't.
+
+---
+
+# Reference card: The Blueprint (classes)
+
+_Started Lesson 5, 2026-07-25 — landed for `__init__`/DATA, still shaky for
+methods that take their own new parameters. Not a finished lesson entry yet._
+
+## THING → DATA → ACTIONS → CODE
+
+Same shape as The Method, one level up:
+
+- **THING** — what real-world thing is this modeling? One class = one kind
+  of thing (a filing-cabinet template, not one specific drawer).
+- **DATA** — what facts does ONE of these need to remember about itself?
+  Becomes `self.x = ...` lines inside `__init__`.
+- **ACTIONS** — what can it DO, or what can be done TO it? Becomes methods.
+- **CODE:**
+  ```python
+  class THING:
+      def __init__(self, ...):   # DATA goes here
+          self.fact1 = ...
+          self.fact2 = ...
+
+      def ACTION(self, ...):     # one method per ACTION
+          ...
+  ```
+
+## Two different kinds of `self.x = ...` line
+
+Easy to blur together — they look identical but come from different places:
+
+1. **Handed in from outside** — a parameter, copied onto `self` so it's
+   remembered after `__init__` finishes: `self.client = client`. Same
+   parameter idea as `build_prompt(topic, tone)` — nothing new about
+   parameters themselves, just that `__init__` takes them too.
+2. **Starts the same for everyone, no parameter** — a fixed default every
+   new instance gets regardless of input: `self.conversation_history = []`,
+   `self.count = 0`.
+
+## `self` = "whichever specific instance we're using right now"
+
+Two instances of the same class (e.g. `captain = ChatBot(...)` and
+`friendly = ChatBot(...)`) each get their OWN separate DATA — changing one
+never touches the other, even though both came from the identical blueprint.
+
+## Traps hit so far
+
+- **A class body can't be empty.** `class Counter:` with nothing under it is
+  `IndentationError: expected an indented block` — same "a colon promises a
+  block" rule as `if`/`while`/`def`, just applied to `class`.
+- **`print(my_thing)` vs `print(my_thing.fact)`** — printing the whole
+  instance with no dot gives Python's fallback description
+  (`<__main__.ChatBot object at 0x...>`), not any one fact inside it. Need
+  the dot to reach a specific piece of DATA — same filing-cabinet idea as
+  chained list/dict access (which drawer vs. which folder inside it).
+- **A method's own new IN is easy to confuse with DATA already on `self`.**
+  If `self` already has `conversation_history`, a method using it does NOT
+  need it passed in again. The real new IN is only whatever's genuinely
+  different each call (e.g. what the user just typed) — and anything the
+  method creates partway through (like an API `response`) is neither IN nor
+  OUT, just an intermediate STEP.

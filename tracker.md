@@ -28,8 +28,8 @@ Last updated: 2026-07-24
 | 13 | Capstone | everything above | full automation, published to GitHub | ☐ |
 
 **Current position (2026-07-25, later session):** Lesson 4.5 (both parts) DONE.
-Lesson 4 DONE (exercise fixed + reviewed, quiz passed). Next: Lesson 5 —
-OOP I (classes, `__init__`, methods; wrap the API in a `ChatBot` class).
+Lesson 4 DONE (exercise fixed + reviewed, quiz passed). Lesson 5 IN PROGRESS,
+paused mid-lesson (see below) — resume there, do not restart from scratch.
 
 ## Python Level Assessment (2026-07-25)
 
@@ -304,6 +304,76 @@ Explained from scratch mid-quiz; worth a one-line mention early in any future
 lesson that touches API responses, since it's foundational to Lessons 8-13
 (tool use, structured output, evaluation all lean on it).
 
+## Lesson 5 — OOP I, Classes (2026-07-25) — IN PROGRESS, session ended mid-lesson
+
+**Taught and landed, confirmed by real predict-then-run / self-correction:**
+- **The Blueprint** framework (new reference card, parallel to The Method):
+  THING → DATA → ACTIONS → CODE, mapping DATA onto `self.x = ...` inside
+  `__init__` and ACTIONS onto methods. Card written to bottom of
+  `cheatsheet.md`.
+- Practised THING/DATA/ACTIONS with no code first, on "a bank account."
+  Self-corrected "if account exists" → `is_closed` (starts `False`) once
+  pointed at the `Dog.is_hungry` parallel (a status flag an ACTION flips) —
+  landed after one correction, no re-explain needed.
+- **`__init__` with no parameters** — guided, real code, in
+  `src/lesson05/practice_counter.py` (throwaway class, `Counter`:
+  `self.count = 0`, `increment()` adds 1). Hit and correctly reasoned through
+  a fresh `IndentationError: expected an indented block after class
+  definition` (empty class body — same "colon promises a block" rule as
+  `if`/`while`/`def`, just applied to `class` for the first time). Predicted
+  `0, 1` for the two `print` calls correctly.
+- **`__init__` WITH parameters** — this needed an explicit extra bridge I'd
+  skipped: `Counter.__init__` took no parameters, so jumping straight to
+  `ChatBot.__init__(self, client, system)` was a real gap, not obvious from
+  `Counter` alone. Fixed by connecting back to Lesson 3's
+  `build_prompt(topic, tone)` (parameters aren't new) plus a DMV metaphor for
+  *why* some `self.x` lines copy a parameter in (`self.client = client`)
+  while others start the same for everyone regardless of input
+  (`self.conversation_history = []`, no parameter). `src/lesson05/chatbot.py`
+  now has a working `ChatBot.__init__(self, client, system)`. Verified live:
+  correctly predicted `print(my_bot)` (no `.system`) shows the raw object
+  (`<__main__.ChatBot object at 0x...>`), then correctly predicted
+  `print(my_bot.system)` gives back `"grumpy captain"` once told to check
+  which one they'd actually run.
+
+**Where it broke down:** designing `send_message`'s IN (the method that will
+wrap the actual API call). Session repeatedly conflated three different
+things: `conversation_history` (already on `self`, not a new input),
+`response` (doesn't exist yet — created *inside* the method as a step, not
+an input or output), and the actual missing IN (the text the user just
+typed, parallel to Lesson 2's `input("You: ")`). Direct analogy to
+`build_prompt(topic, tone)` and to Lesson 2's loop did not make it land this
+session. User explicitly said the explanation itself isn't landing, not just
+that they're tired — flagged as a real teaching-approach problem, not only a
+pacing one.
+
+**Diagnosis for next session (do this before retrying send_message):** the
+jump from "one self.x-per-parameter in `__init__`" straight to "a method
+that takes a new parameter AND does multiple STEPS AND calls the API" bundles
+too many new ideas at once. Insert one more isolated practice step first —
+extend the throwaway `Counter` with a method that takes exactly one new
+parameter and does ONE thing with it, e.g. `increment_by(self, amount):
+self.count += amount` — with nothing else going on (no API, no multi-step
+logic). Only once "a method can take a new parameter besides self, separate
+from what's already reused from `__init__`" is solid on its own, go back to
+decomposing `send_message`'s IN/OUT/STEPS.
+
+**Resume here, in order:**
+1. `Counter.increment_by(self, amount)` practice — isolated "method takes a
+   new parameter" exercise, no other complexity.
+2. Re-attempt `send_message` OUT/IN, now that IN-as-new-parameter is a solid
+   standalone concept, not tangled with `conversation_history`/`response`.
+3. STEPS for `send_message`, referencing `src/lesson02/chat_loop.py`
+   directly (this method is that logic, moved inside the class — say this
+   out loud again, it wasn't fully absorbed as "already-known logic,
+   repackaged" this session).
+4. Full working `ChatBot.send_message`, tested against a real API call.
+5. Lesson 5 quiz (not yet given — exercise isn't finished).
+
+**Files so far (not yet committed):** `src/lesson05/practice_counter.py`
+(throwaway, safe to keep or delete), `src/lesson05/chatbot.py` (real
+exercise, `__init__` only, `send_message` not yet started).
+
 ## Quiz Log
 
 **Lesson 1 (2026-07-24):**
@@ -413,4 +483,5 @@ never guessed:
 ## Portfolio Status
 - Repos: [claude-python-job-prep](https://github.com/adrianbaltag/claude-python-job-prep) (public)
 - READMEs: root README.md done (2026-07-24)
-- Commits: 1 — "Initial course setup: roadmap, cheatsheet, README"
+- Commits: 2 — "Initial course setup: roadmap, cheatsheet, README";
+  "Lesson 4 + 4.5: structured JSON output, task decoding, and docs-reading" (2026-07-25, tutor-committed per operator approval)
